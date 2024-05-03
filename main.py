@@ -113,7 +113,7 @@ def get_coupons(relevant_brands, brand_list, Brand):
     
     final_list = [brand for brand in brand_list if brand.name in relevant_brands]
     for brand in final_list:
-        st.write("Use coupon code:", brand.code,  "to get a discout from", brand.name)
+        st.write("Use coupon code:", brand.code,  "to get a discount from", brand.name)
 
 
 
