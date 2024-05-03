@@ -1,12 +1,11 @@
 #Loading Packages
 import streamlit as st
 import langchain 
-from langchain.chat_models import ChatOpenAI
 from langchain_community.chat_models import ChatOpenAI
 import pandas as pd
 import numpy as np
 
-#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
+
 
 #Lets create a dummy class for storing the coupon information for the different brands (i am assuming the Resal API already includes these info)
 class Brand:
@@ -168,6 +167,7 @@ api_key = st.text_input("Enter your OpenAI key to get started", type="password")
 if api_key:
     llm_retrieve_product = ChatOpenAI(model_name="gpt-4",temperature=0.2, openai_api_key=api_key)
     llm_find_brands = ChatOpenAI(model_name="gpt-4",temperature=0.8, openai_api_key=api_key)
+    st.write("Example: I want coupons to buy a new TV")
     user_question = st.text_input(" What are you looking for: ")
 
     if user_question != "":
