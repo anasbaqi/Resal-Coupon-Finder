@@ -1,7 +1,7 @@
 pip
 streamlit
-altair
 pandas
 numpy
 langchain
 openai
+langchain-community
