@@ -1,7 +1,8 @@
 pip
-streamlit
+streamlit==1.34.0
 pandas
 numpy
-langchain
-openai
-langchain-community
+langchain==0.1.17
+openai==1.25.1
+langchain-community==0.0.36
+deep-translator==1.11.4
