@@ -178,52 +178,59 @@ def all_comp(llm_retrieve_product, llm_find_brands, category_list, uq, Coupons, 
 #The title of the UI:
 st.header('Resal Coupon Finder (Using ChatGPT)')
 st.write("A PoC for utilizing AI Agents for Resal's Save More coupon store.")
-
-st.divider()
-
-language = st.selectbox(
-    "Select page language",
-    ("English", "عربي")
-)
-
-if language == 'English':
-    #Api key:
-    api_key = st.text_input("Enter your OpenAI key to get started", type="password")
-    #Chatting:
-    st.subheader("What are you looking for?")
+tab1, tab2 = st.tabs(["Search by Product", "How it works"])
 
 
-    #LLM initializations:
+with tab1:
+    st.divider()
+    language = st.selectbox(
+        "Select page language",
+        ("English", "عربي")
+    )
 
-    #1. For retrieving product from promt question. (not creative = 0.4 temperature)
-    #2. For finding relevent brands. (Creative = 0.8 tempreture)
-    if api_key:
-        llm_retrieve_product = ChatOpenAI(model_name="gpt-4",temperature=0.4, openai_api_key=api_key)
-        llm_find_brands = ChatOpenAI(model_name="gpt-4",temperature=0.8, openai_api_key=api_key)
-        
-        user_question = st.text_input(" What are you looking for: ")
+    if language == 'English':
+        #Api key:
+        api_key = st.text_input("Enter your OpenAI key to get started", type="password")
+        #Chatting:
+        st.subheader("What are you looking for?")
 
-        st.write("Example: I want to buy a new TV")
-        st.divider()
-        if user_question != "":
-            all_comp(llm_retrieve_product, llm_find_brands, categories, user_question, Coupons, lang=0)
 
-else:
-    #Api key:
-    api_key = st.text_input("أدخل مفتاح OpenAI الخاص بك للبدء", type="password")
-    st.subheader("ما الذي تبحث عنه؟")
+        #LLM initializations:
 
-    #LLM initializations:
+        #1. For retrieving product from promt question. (not creative = 0.4 temperature)
+        #2. For finding relevent brands. (Creative = 0.8 tempreture)
+        if api_key:
+            llm_retrieve_product = ChatOpenAI(model_name="gpt-4",temperature=0.4, openai_api_key=api_key)
+            llm_find_brands = ChatOpenAI(model_name="gpt-4",temperature=0.8, openai_api_key=api_key)
+            
+            user_question = st.text_input(" What are you looking for: ")
 
-    #1. For retrieving product from promt question. (not creative = 0.4 temperature)
-    #2. For finding relevent brands. (Creative = 0.8 tempreture)
-    if api_key:
-        llm_retrieve_product = ChatOpenAI(model_name="gpt-4",temperature=0.4, openai_api_key=api_key)
-        llm_find_brands = ChatOpenAI(model_name="gpt-4",temperature=0.8, openai_api_key=api_key)
-        
-        user_question = st.text_input(" ما الذي تبحث عنه ")
-        st.write("مثال: أريد شراء جهاز تلفزيون جديد")
-        st.divider()
-        if user_question != "":
-            english_question = GoogleTranslator(source='ar', target='en').translate(user_question)
-            all_comp(llm_retrieve_product, llm_find_brands, categories, english_question, Coupons, lang=1)
+            st.write("Example: I want to buy a new TV")
+            st.divider()
+            if user_question != "":
+                all_comp(llm_retrieve_product, llm_find_brands, categories, user_question, Coupons, lang=0)
+
+    else:
+        #Api key:
+        api_key = st.text_input("أدخل مفتاح OpenAI الخاص بك للبدء", type="password")
+        st.subheader("ما الذي تبحث عنه؟")
+
+        #LLM initializations:
+
+        #1. For retrieving product from promt question. (not creative = 0.4 temperature)
+        #2. For finding relevent brands. (Creative = 0.8 tempreture)
+        if api_key:
+            llm_retrieve_product = ChatOpenAI(model_name="gpt-4",temperature=0.4, openai_api_key=api_key)
+            llm_find_brands = ChatOpenAI(model_name="gpt-4",temperature=0.8, openai_api_key=api_key)
+            
+            user_question = st.text_input(" ما الذي تبحث عنه ")
+            st.write("مثال: أريد شراء جهاز تلفزيون جديد")
+            st.divider()
+            if user_question != "":
+                english_question = GoogleTranslator(source='ar', target='en').translate(user_question)
+                all_comp(llm_retrieve_product, llm_find_brands, categories, english_question, Coupons, lang=1)
+
+with tab2:
+    st.write("Customers can ask an AI LLM model for a product and a list of relevent coupons will be returned. This workflow shows how it works:")
+    st.image("coupon_finder_workflow.png")
+    
