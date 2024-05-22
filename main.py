@@ -231,6 +231,9 @@ with tab1:
                 all_comp(llm_retrieve_product, llm_find_brands, categories, english_question, Coupons, lang=1)
 
 with tab2:
-    st.write("Customers can ask an AI LLM model for a product and a list of relevent coupons will be returned. This workflow shows how it works:")
+    st.write("This is a streamlit based PoC for utilizing AI agents for Resal's Save More coupon store.")
+    st.write("Users (customers) will be able to search for products they want coupons for. The ChatGPT model will return a list of relevent coupons.")
+    st.write("Works in both English and Arabic")
+    st.subheader("Workflow:")
     st.image("coupon_finder_workflow.png")
     
