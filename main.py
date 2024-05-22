@@ -66,11 +66,11 @@ coupon_data = [
 categories = {
     "fashion": ["noon", "namshi", "Styli", "Ted Baker", "Metro Brazil", "R&B", "Level Shoes", "Brands For Less", "Sivvi", "GAP", "American Eagle", "CitrussTv", "Forever21", "Lyle & Scott", "Bloomingdale's", "fordeal", "COS", "Eyewa", "Store Us"],
     "sports": ["SSSports", "UnderArmour", "New Balance", "Store Us", "noon"],
-    "beauty": ["Basharacare", "Boots", "Mikyajy", "The Bodyshop", "AlDakheel Oud", "Store Us", "noon"],
+    "beauty": ["Basharacare", "Boots", "Mikyajy", "The Bodyshop", "AlDakheel Oud", "Store Us", "noon", "CitrussTv"],
     "toys": ["Toys R Us", "Lego", "Store Us", "noon"],
     "baby": ["Mamas & Papas", "Mothercare", "Toys R Us", "Mumzworld", "Store Us", "noon"],
-    "home": ["CitrussTv", "Homes R us", "Pottery Barn", "Nabataty", "The Luxury Closet", "Store Us", "noon"],
-    "mobile": ["Ya Hala"],
+    "home": ["Homes R us", "Pottery Barn", "Nabataty", "The Luxury Closet", "Store Us", "noon", "CitrussTv"],
+    "mobile plans": ["Ya Hala"],
     "grocery":["Barakat"],
     "technology":["noon", "Store Us"]
 }
@@ -138,36 +138,37 @@ def get_relevent_category(prompt_product, category_names, llm):
 
 
 
-def get_coupons(relevant_category, coupons, Coupons):
-    # Split the string into individual brand names
-    #brand_names = [name.strip() for name in relevant_brands.split(',')]
-
+def get_coupons(relevant_category, coupons, Coupons, lang):
     # Filter the list of brands based on the relevant brand names
     relevent_coupons = [coupon for coupon in coupons if relevant_category in coupon.category]
-
-    for coupon in relevent_coupons:
-        st.write("Use coupon code:", coupon.code, "to get a discount from", coupon.name_en)
+    if lang == 0:
+        for coupon in relevent_coupons:
+            st.write(f"Use coupon code: **{coupon.code}** to get a discount from **{coupon.name_en}**")
+    
+    else:
+        for coupon in relevent_coupons:
+            st.write(f"استخدم رمز القسيمة: **{coupon.code}** للحصول على خصم من **{coupon.name_ar}**")
 
 
 #Calling all the functions:
-def all_comp(llm_retrieve_product, llm_find_brands, category_list, uq, Coupons):
+def all_comp(llm_retrieve_product, llm_find_brands, category_list, uq, Coupons, lang):
 
     coupons = categorize(coupon_data, category_list)
 
     product_all = get_product(uq, llm_retrieve_product)
 
     product = product_all.content
-    st.write(product)
+    #st.write(product)
     categories = get_categories(category_list)
 
     relevent_category = get_relevent_category(product, categories, llm_find_brands)
 
-    st.write(relevent_category.content)
+    #st.write(relevent_category.content)
 
-    get_coupons(relevent_category.content, coupons, Coupons)
+    get_coupons(relevent_category.content, coupons, Coupons, lang)
 
     with st.expander("Token Usage"):
-        st.write("Tokens used for retriving product (0.2 temp)", product_all.response_metadata['token_usage'])
+        st.write("Tokens used for retriving product (0.4 temp)", product_all.response_metadata['token_usage'])
         st.write("Tokens used for finding brands (0.8 temp):", relevent_category.response_metadata['token_usage'])
 
 #-----------------------------------------------------------------------------------------------------------------------------------
@@ -180,24 +181,49 @@ st.write("A PoC for utilizing AI Agents for Resal's Save More coupon store.")
 
 st.divider()
 
-#Chatting:
-st.subheader("What are you looking for")
+language = st.selectbox(
+    "Select page language",
+    ("English", "عربي")
+)
 
-#Api key:
-api_key = st.text_input("Enter your OpenAI key to get started", type="password")
+if language == 'English':
+    #Api key:
+    api_key = st.text_input("Enter your OpenAI key to get started", type="password")
+    #Chatting:
+    st.subheader("What are you looking for?")
 
 
-#LLM initializations:
+    #LLM initializations:
 
-#1. For retrieving product from promt question. (not creative = 0.2 temperature)
-#2. For finding relevent brands. (Creative = 0.8 tempreture)
+    #1. For retrieving product from promt question. (not creative = 0.4 temperature)
+    #2. For finding relevent brands. (Creative = 0.8 tempreture)
+    if api_key:
+        llm_retrieve_product = ChatOpenAI(model_name="gpt-4",temperature=0.4, openai_api_key=api_key)
+        llm_find_brands = ChatOpenAI(model_name="gpt-4",temperature=0.8, openai_api_key=api_key)
+        
+        user_question = st.text_input(" What are you looking for: ")
 
+        st.write("Example: I want to buy a new TV")
+        st.divider()
+        if user_question != "":
+            all_comp(llm_retrieve_product, llm_find_brands, categories, user_question, Coupons, lang=0)
 
-if api_key:
-    llm_retrieve_product = ChatOpenAI(model_name="gpt-4",temperature=0.4, openai_api_key=api_key)
-    llm_find_brands = ChatOpenAI(model_name="gpt-4",temperature=0.8, openai_api_key=api_key)
-    st.write("Example: I want to buy a new TV")
-    user_question = st.text_input(" What are you looking for: ")
+else:
+    #Api key:
+    api_key = st.text_input("أدخل مفتاح OpenAI الخاص بك للبدء", type="password")
+    st.subheader("ما الذي تبحث عنه؟")
 
-    if user_question != "":
-        all_comp(llm_retrieve_product, llm_find_brands, categories, user_question, Coupons)
+    #LLM initializations:
+
+    #1. For retrieving product from promt question. (not creative = 0.4 temperature)
+    #2. For finding relevent brands. (Creative = 0.8 tempreture)
+    if api_key:
+        llm_retrieve_product = ChatOpenAI(model_name="gpt-4",temperature=0.4, openai_api_key=api_key)
+        llm_find_brands = ChatOpenAI(model_name="gpt-4",temperature=0.8, openai_api_key=api_key)
+        
+        user_question = st.text_input(" ما الذي تبحث عنه ")
+        st.write("مثال: أريد شراء جهاز تلفزيون جديد")
+        st.divider()
+        if user_question != "":
+            english_question = GoogleTranslator(source='ar', target='en').translate(user_question)
+            all_comp(llm_retrieve_product, llm_find_brands, categories, english_question, Coupons, lang=1)
