@@ -57,6 +57,10 @@ if result:
         'url': pc['partner']['url']
     } for pc in partner_codes}
 
+    for brand, info in brands_dict.items():
+        if 'ar' in info['url']:
+            info['url'] = info['url'].replace('ar', 'en')
+
     # Save the dictionary to a JSON file
     with open('brands_dict.json', 'w') as f:
         json.dump(brands_dict, f)
