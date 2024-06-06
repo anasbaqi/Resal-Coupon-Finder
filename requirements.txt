@@ -6,6 +6,5 @@ langchain==0.1.17
 openai==1.25.1
 langchain-community==0.0.36
 requests
-urllib.parse
 json
 bs4
