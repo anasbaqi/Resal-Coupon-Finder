@@ -2,64 +2,20 @@
 import streamlit as st
 from langchain_community.chat_models import ChatOpenAI
 import pandas as pd
-import numpy as np
-from deep_translator import GoogleTranslator
+import json
+import requests
+from bs4 import BeautifulSoup
+import urllib.parse
 
-
-#Class for coupon information, contains: name in en, arabic, coupon code, category it belongs to, description and id for later
-class Coupons:
-    def __init__(self, name_en, name_ar, code, description="", category=None,  api_id=0):
-        self.name_en = name_en
-        self.name_ar = name_ar
-        self.code = code
-        self.description = description
-        self.category = category if category is not None else []
-        self.api_id = api_id
-
-    def __str__(self):
-        return f"Partner(name_en={self.name_en}, name_ar={self.name_ar}, code = {self.code}, category = {self.category})"
-
-# List of Coupons
-coupon_data = [
-    {"code": "RSL10", "partner": {"name_en": "noon", "name_ar": "نون"}},
-    {"code": "RSL0", "partner": {"name_en": "namshi", "name_ar": "نمشي"}},
-    {"code": "EP26", "partner": {"name_en": "SSSports", "name_ar": "الشمس والرمال للرياضة"}},
-    {"code": "SOM54", "partner": {"name_en": "Styli", "name_ar": "ستايلي"}},
-    {"code": "PF4", "partner": {"name_en": "Basharacare", "name_ar": "بشرة كير"}},
-    {"code": "G63", "partner": {"name_en": "Ted Baker", "name_ar": "تيد بيكر"}},
-    {"code": "PJZ", "partner": {"name_en": "Nabataty", "name_ar": "متجر نباتاتي"}},
-    {"code": "PTAH", "partner": {"name_en": "Toys R Us", "name_ar": "تويز آر اس"}},
-    {"code": "CR67", "partner": {"name_en": "UnderArmour", "name_ar": "اندرارمر"}},
-    {"code": "PF45", "partner": {"name_en": "Metro Brazil", "name_ar": "مترو برازيل"}},
-    {"code": "BB37", "partner": {"name_en": "R&B", "name_ar": "آر اند بي"}},
-    {"code": "LC5", "partner": {"name_en": "The Luxury Closet", "name_ar": "ذا لاكجري كلوزيت"}},
-    {"code": "OM36", "partner": {"name_en": "fordeal", "name_ar": "فورديل"}},
-    {"code": "RSL", "partner": {"name_en": "Level Shoes", "name_ar": "ليڤيل شوز"}},
-    {"code": "RSL", "partner": {"name_en": "Mamas & Papas", "name_ar": "ماماز اند باباز"}},
-    {"code": "PF98", "partner": {"name_en": "Brands For Less", "name_ar": "براندز فور ليس"}},
-    {"code": "RSL30", "partner": {"name_en": "Sivvi", "name_ar": "سيفي"}},
-    {"code": "P56", "partner": {"name_en": "Ya Hala", "name_ar": "يا هلا"}},
-    {"code": "PFIPC", "partner": {"name_en": "Boots", "name_ar": "بوتس"}},
-    {"code": "PFEXH", "partner": {"name_en": "New Balance", "name_ar": "نيو بالنس"}},
-    {"code": "PFDJD", "partner": {"name_en": "COS", "name_ar": "كوس"}},
-    {"code": "PFQDC", "partner": {"name_en": "Mothercare", "name_ar": "مذركير"}},
-    {"code": "RSL", "partner": {"name_en": "GAP", "name_ar": "جاب"}},
-    {"code": "PFXPB", "partner": {"name_en": "American Eagle", "name_ar": "أميركان ايجل"}},
-    {"code": "RSL", "partner": {"name_en": "Mumzworld", "name_ar": "ممزورلد"}},
-    {"code": "RSL", "partner": {"name_en": "CitrussTv", "name_ar": "سيتروس"}},
-    {"code": "RA", "partner": {"name_en": "Mikyajy", "name_ar": "مكياجي"}},
-    {"code": "BB58", "partner": {"name_en": "Forever21", "name_ar": "فوريفير 21"}},
-    {"code": "PF32", "partner": {"name_en": "Barakat", "name_ar": "بركات"}},
-    {"code": "PF53", "partner": {"name_en": "Store Us", "name_ar": "ستور اص"}},
-    {"code": "MM128", "partner": {"name_en": "Lego", "name_ar": "ليقو"}},
-    {"code": "OM605", "partner": {"name_en": "Lyle & Scott", "name_ar": "لايل اند سكوت"}},
-    {"code": "PL59", "partner": {"name_en": "AlDakheel Oud", "name_ar": "الدخيل للعود"}},
-    {"code": "PFGZS", "partner": {"name_en": "The Bodyshop", "name_ar": "ذي بودي شوب"}},
-    {"code": "RSL", "partner": {"name_en": "Eyewa", "name_ar": "ايوا"}},
-    {"code": "ASM9", "partner": {"name_en": "Homes R us", "name_ar": "هومز ار اس"}},
-    {"code": "PFNMT", "partner": {"name_en": "Pottery Barn", "name_ar": "بوتري بارن"}},
-    {"code": "RSL", "partner": {"name_en": "Bloomingdale's", "name_ar": "بلومينغديلز"}}
-]
+# Load the dictionary with coupon data from the JSON file
+def load_brands_dict(json_file):
+    try:
+        with open(json_file, 'r') as f:
+            brands_dict = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        print(f"Failed to load '{json_file}'. Creating a new empty dictionary.")
+        brands_dict = {}
+    return brands_dict
 
 
 #Created a list of categories and categorized all the coupons:
@@ -75,54 +31,8 @@ categories = {
     "technology":["noon", "Store Us"]
 }
 
-#functiion for categorizing all the coupons, API does not have this information so I did it myself
-def categorize(coupon_data, categories):
-    #adding the categories to the class:
-    for item in coupon_data:
-        brand_name = item['partner']['name_en']
-        item['category'] = []
-        
-        for category, brands in categories.items():
-            if brand_name in brands:
-                item['category'].append(category)
-        
-        if not item['category']:
-            item['category'].append('other')
+category_names = list(categories.keys())
 
-    # Create a list to store Partner instances
-    coupons = []
-
-    # Create Partner instances from the data and add them to the list
-    for coupon in coupon_data:
-        name_en = coupon["partner"]["name_en"]
-        name_ar = coupon["partner"]["name_ar"]
-        code = coupon["code"]
-        category = coupon["category"]
-        partner = Coupons(name_en, name_ar, code, category=category)
-        coupons.append(partner)
-    
-    return coupons
-
-
-
-
-#Using the llm to retrieve the string that contains the name of the product from the prompt question:
-def get_product(prompt_question, llm):
-    """Function to extract the product from the prompt question"""
-
-    messages = [
-    ("system", "Do not answer the prompt, just output a single string that is the product the user is asking for."),
-    ("human", prompt_question),
-    ]
-
-    return llm.invoke(messages)
-
-
-
-#Function for creating a string with all coupon names:
-def get_categories(categories):
-    """Tool that returns a string of all the categories separated by commas."""
-    return ', '.join(categories.keys())
 
 
 #Function for retrieving category using llm:
@@ -137,39 +47,97 @@ def get_relevent_category(prompt_product, category_names, llm):
     return llm.invoke(messages)
 
 
+def get_coupons(relevant_category, brands_dict):
+    # Filter brands based on the relevant category
+    relevant_brands = [(brand, details) for brand, details in brands_dict.items() if relevant_category in details.get('category', [])]
+    return relevant_brands
 
-def get_coupons(relevant_category, coupons, Coupons, lang):
-    # Filter the list of brands based on the relevant brand names
-    relevent_coupons = [coupon for coupon in coupons if relevant_category in coupon.category]
-    if lang == 0:
-        for coupon in relevent_coupons:
-            st.write(f"Use coupon code: **{coupon.code}** to get a discount from **{coupon.name_en}**")
+#Function to search google
+def google_search(query, site, num_results=1):
+    # Construct the search URL
+    query = f"{query} site:{site}"
+    url = f"https://www.google.com/search?q={urllib.parse.quote(query)}&num={num_results}"
     
+    # Set up headers to mimic a real browser request
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
+    
+    # Make the request to Google
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()  # Ensure the request was successful
+    
+    # Parse the HTML content
+    soup = BeautifulSoup(response.text, "html.parser")
+    
+    # Extract the first search result
+    result = soup.find('div', class_='tF2Cxc')
+    if result:
+        title = result.find('h3').text if result.find('h3') else 'No title'
+        link = result.find('a')['href'] if result.find('a') else 'No link'
+        snippet = result.find('div', class_='IsZvec').text if result.find('div', class_='IsZvec') else 'No snippet'
+        return {'title': title, 'link': link, 'snippet': snippet}
     else:
-        for coupon in relevent_coupons:
-            st.write(f"استخدم رمز القسيمة: **{coupon.code}** للحصول على خصم من **{coupon.name_ar}**")
+        return None
+    
+
+def search_stores_free(relevant_brands, product):
+
+    for brand, details in relevant_brands:
+        # Format the coupon information for English language
+        coupon_url = details.get('url', '')
+        coupon_name = details.get('name_en', '')
+        coupon_code = details.get('code', '')
+
+        search_result = google_search(f"{product}", f"{coupon_url}")
+    
+        if search_result:
+            st.markdown(f"Visit **{coupon_name}** and use coupon code **{coupon_code}** to get a discount: [{search_result['title']}]({search_result['link']})")
+        
+def search_stores(relevant_brands, product, api, search_id):
+
+    for brand, details in relevant_brands:
+        # Format the coupon information for English language
+        coupon_url = details.get('url', '')
+        coupon_name = details.get('name_en', '')
+        coupon_code = details.get('code', '')
+    
+        url = "https://www.googleapis.com/customsearch/v1"
+
+        params = {
+            "q": f"{product} site:{coupon_url}",
+            'key': api,
+            'cx': search_id
+        }
+
+        response = requests.get(url, params=params)
+        results = response.json()
+
+        if 'items' in results:
+            st.markdown(f"Visit **{coupon_name}** and use coupon code **{coupon_code}** to get a discount: [{results['items'][0]['title']}]({results['items'][0]['link']})")
+
 
 
 #Calling all the functions:
-def all_comp(llm_retrieve_product, llm_find_brands, category_list, uq, Coupons, lang):
+def all_comp(llm_find_brands, category_list, uq, free, api_key, search_id):
 
-    coupons = categorize(coupon_data, category_list)
+    brand_dict = load_brands_dict("brands_dict1.json")
 
-    product_all = get_product(uq, llm_retrieve_product)
-
-    product = product_all.content
-    #st.write(product)
-    categories = get_categories(category_list)
-
-    relevent_category = get_relevent_category(product, categories, llm_find_brands)
+    relevent_category = get_relevent_category(uq, category_list, llm_find_brands)
 
     #st.write(relevent_category.content)
 
-    get_coupons(relevent_category.content, coupons, Coupons, lang)
+    relevant_brands = get_coupons(relevent_category.content, brand_dict)
 
+    if free:
+        search_stores_free(relevant_brands, uq)
+    else:
+        search_stores(relevant_brands, uq, api_key, search_id)
+
+    st.divider()
     with st.expander("Token Usage"):
-        st.write("Tokens used for retriving product (0.4 temp)", product_all.response_metadata['token_usage'])
         st.write("Tokens used for finding brands (0.8 temp):", relevent_category.response_metadata['token_usage'])
+
 
 #-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -182,53 +150,41 @@ tab1, tab2 = st.tabs(["Search by Product", "How it works"])
 
 
 with tab1:
-    st.divider()
-    language = st.selectbox(
-        "Select page language",
-        ("English", "عربي")
+
+    #Api key:
+    openAI_api = st.text_input("[Enter your OpenAI key to get started](https://openai.com/api/)", type="password")
+    search_type = st.selectbox(
+        "Free search engine or paid (100 free per day)?",
+        ("Free", "Paid")
     )
+    st.write("Engine Selected:", search_type)
 
-    if language == 'English':
-        #Api key:
-        api_key = st.text_input("Enter your OpenAI key to get started", type="password")
-        #Chatting:
-        st.subheader("What are you looking for?")
-
-
-        #LLM initializations:
-
-        #1. For retrieving product from promt question. (not creative = 0.4 temperature)
-        #2. For finding relevent brands. (Creative = 0.8 tempreture)
-        if api_key:
-            llm_retrieve_product = ChatOpenAI(model_name="gpt-4",temperature=0.4, openai_api_key=api_key)
-            llm_find_brands = ChatOpenAI(model_name="gpt-4",temperature=0.8, openai_api_key=api_key)
-            
-            user_question = st.text_input(" What are you looking for: ")
-
-            st.write("Example: I want to buy a new TV")
-            st.divider()
-            if user_question != "":
-                all_comp(llm_retrieve_product, llm_find_brands, categories, user_question, Coupons, lang=0)
+    
+    if search_type == "Paid":
+        api_key = st.text_input("[Enter your Google Cloud Console key to get started](https://console.cloud.google.com/welcome/new)", type="password")
+        search_id = st.text_input("[Enter your Search Engine ID to get started](https://programmablesearchengine.google.com/about/)", type="password")
 
     else:
-        #Api key:
-        api_key = st.text_input("أدخل مفتاح OpenAI الخاص بك للبدء", type="password")
-        st.subheader("ما الذي تبحث عنه؟")
+        api_key = ""
+        search_id = ""
 
-        #LLM initializations:
+    #Chatting:
+    st.subheader("What are you looking for?")
 
-        #1. For retrieving product from promt question. (not creative = 0.4 temperature)
-        #2. For finding relevent brands. (Creative = 0.8 tempreture)
-        if api_key:
-            llm_retrieve_product = ChatOpenAI(model_name="gpt-4",temperature=0.4, openai_api_key=api_key)
-            llm_find_brands = ChatOpenAI(model_name="gpt-4",temperature=0.8, openai_api_key=api_key)
-            
-            user_question = st.text_input(" ما الذي تبحث عنه ")
-            st.write("مثال: أريد شراء جهاز تلفزيون جديد")
-            st.divider()
-            if user_question != "":
-                english_question = GoogleTranslator(source='ar', target='en').translate(user_question)
-                all_comp(llm_retrieve_product, llm_find_brands, categories, english_question, Coupons, lang=1)
+
+    if openAI_api:
+        #LLM initializations for finding relevent brands. (Creative = 0.8 tempreture)
+        llm_find_brands = ChatOpenAI(model_name="gpt-4",temperature=0.8, openai_api_key=openAI_api)
+        
+        user_question = st.text_input(" What are you looking for: ")
+
+        st.write("Example: LG TV")
+        st.divider()
+        if user_question != "":
+            if search_type == 'Free':
+                all_comp(llm_find_brands, category_names, user_question, 1, api_key, search_id)
+            else:
+                all_comp(llm_find_brands, category_names, user_question, 0, api_key, search_id)
 
 with tab2:
     st.write("This is a streamlit based PoC for utilizing AI agents for Resal's Save More coupon store.")
@@ -236,4 +192,3 @@ with tab2:
     st.write("Works in both English and Arabic")
     st.subheader("Workflow:")
     st.image("coupon_finder_workflow.png")
-    

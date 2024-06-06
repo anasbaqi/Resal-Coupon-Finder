@@ -50,16 +50,37 @@ if result:
     partner_codes = result.get('getPartnerCodePage', {}).get('partnerCodes', [])
     
     # Create a dictionary with 'name_en' as keys and brand information as values
-    brands_dict = {pc['partner']['name_en'].lower(): {
-        'name_en': pc['partner']['name_en'],
+    brands_dict = {pc['partner']['name_en'].strip(): {
+        'name_en': pc['partner']['name_en'].strip(),
         'name_ar': pc['partner']['name_ar'],
         'code': pc['code'],
-        'url': pc['partner']['url']
+        'url': pc['partner']['url'].replace('/ar', '/en').replace('ar/', 'en/').replace('=ar', '=en'),
+        'category': []
+
     } for pc in partner_codes}
 
-    for brand, info in brands_dict.items():
-        if 'ar' in info['url']:
-            info['url'] = info['url'].replace('ar', 'en')
+
+    #Created a list of categories and categorized all the coupons:
+    categories = {
+        "fashion": ["noon", "namshi", "Styli", "Ted Baker", "Metro Brazil", "R&B", "Level Shoes", "Brands For Less", "Sivvi", "GAP", "American Eagle", "CitrussTv", "Forever21", "Lyle & Scott", "Bloomingdale's", "fordeal", "COS", "Eyewa", "Store Us"],
+        "sports": ["SSSports", "UnderArmour", "New Balance", "Store Us", "noon"],
+        "beauty": ["Basharacare", "Boots", "Mikyajy", "The Bodyshop", "AlDakheel Oud", "Store Us", "noon", "CitrussTv"],
+        "toys": ["Toys R Us", "Lego", "Store Us", "noon"],
+        "baby": ["Mamas & Papas", "Mothercare", "Toys R Us", "Mumzworld", "Store Us", "noon"],
+        "home": ["Homes R us", "Pottery Barn", "Nabataty", "The Luxury Closet", "Store Us", "noon", "CitrussTv"],
+        "mobile plans": ["Ya Hala"],
+        "grocery":["Barakat"],
+        "technology":["noon", "Store Us"]
+    }
+
+    for category, brands in categories.items():
+        for brand in brands:
+            if brand in brands_dict:
+                # Add the category information to the brand's dictionary
+                brands_dict[brand]['category'].append(category)
+
+    for brand, details in brands_dict.items():
+        print(details['url'])
 
     # Save the dictionary to a JSON file
     with open('brands_dict.json', 'w') as f:
