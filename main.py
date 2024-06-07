@@ -151,7 +151,7 @@ def all_comp(llm_find_brands, category_list, uq, free, api_key, search_id):
 #STREAMLIT UI
 
 #The title of the UI:
-st.header('Resal Coupon Finder (Using ChatGPT)')
+st.header('Resal Coupon Finder')
 st.write("A PoC for utilizing AI Agents for Resal's Save More coupon store.")
 
 
