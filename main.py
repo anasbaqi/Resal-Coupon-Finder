@@ -196,10 +196,10 @@ if openAI_api:
     llm_find_brands = ChatOpenAI(model_name="gpt-4",temperature=0.8, openai_api_key=openAI_api)
 
     user_question = st.text_input("Enter a product or a url link: ")
-    st.write("You can enter either:")
+    st.write("(Example) You can enter either:")
     st.write("LG TV")
     st.write("or a link like:")
-    st.write("https://www.amazon.ca/LG-65-Inch-Gallery-OLED65C3PUA-Built/dp/B0BVXDPZP3")
+    st.write("https://www.amazon.ca/lg-oled-65/s?k=lg+oled+65")
     st.divider()
     if user_question != "":
         if search_type == 'Free':
