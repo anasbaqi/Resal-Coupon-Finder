@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 import urllib.parse
 import time
 import random
+import re
 
 # Load the dictionary with coupon data from the JSON file
 def load_brands_dict(json_file):
@@ -35,7 +36,16 @@ categories = {
 
 category_names = list(categories.keys())
 
+#Function for retrieving category using llm:
+def get_product(uq, llm):
+    """Function to find the product from the user query"""
 
+    messages = [
+    ("system", "The prompt provides a url link for a product, return a string with what the product is, just the product."),
+    ("human", f"{uq}"),
+    ]
+
+    return llm.invoke(messages)
 
 #Function for retrieving category using llm:
 def get_relevent_category(prompt_product, category_names, llm):
@@ -129,6 +139,11 @@ def search_stores(relevant_brands, product, api, search_id):
 def all_comp(llm_find_brands, category_list, uq, free, api_key, search_id):
 
     brand_dict = load_brands_dict("brands_dict1.json")
+    pattern = re.compile(r'.+\..+')
+    if re.search(pattern, uq):
+        uq = get_product(uq, llm_find_brands)
+        uq = uq.content
+
 
     relevent_category = get_relevent_category(uq, category_list, llm_find_brands)
 
@@ -179,10 +194,12 @@ st.subheader("What are you looking for?")
 if openAI_api:
     #LLM initializations for finding relevent brands. (Creative = 0.8 tempreture)
     llm_find_brands = ChatOpenAI(model_name="gpt-4",temperature=0.8, openai_api_key=openAI_api)
-    
-    user_question = st.text_input(" What are you looking for: ")
 
-    st.write("Example: LG TV")
+    user_question = st.text_input("Enter a product or a url link: ")
+    st.write("You can enter either:")
+    st.write("LG TV")
+    st.write("or a link like:")
+    st.write("https://www.amazon.ca/LG-65-Inch-Gallery-OLED65C3PUA-Built/dp/B0BVXDPZP3")
     st.divider()
     if user_question != "":
         if search_type == 'Free':
