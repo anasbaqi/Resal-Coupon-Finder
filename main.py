@@ -1,6 +1,6 @@
 #Loading Packages
 import streamlit as st
-from langchain_community.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI
 import pandas as pd
 import json
 import requests
@@ -136,14 +136,15 @@ def search_stores(relevant_brands, product, api, search_id):
 
 
 #Calling all the functions:
-def all_comp(llm_find_brands, category_list, uq, free, api_key, search_id):
+def all_comp(llm_find_brands, category_list, uq):
 
     brand_dict = load_brands_dict("brands_dict1.json")
     pattern = re.compile(r'.+\..+')
+    is_url = 0
     if re.search(pattern, uq):
-        uq = get_product(uq, llm_find_brands)
-        uq = uq.content
-
+        uq_raw = get_product(uq, llm_find_brands)
+        uq = uq_raw.content
+        is_url = 1
 
     relevent_category = get_relevent_category(uq, category_list, llm_find_brands)
 
@@ -151,15 +152,21 @@ def all_comp(llm_find_brands, category_list, uq, free, api_key, search_id):
 
     relevant_brands = get_coupons(relevent_category.content, brand_dict)
 
-    if free:
-        search_stores_free(relevant_brands, uq)
-    else:
-        search_stores(relevant_brands, uq, api_key, search_id)
+    search_stores_free(relevant_brands, uq)
+
 
     st.divider()
     with st.expander("Token Usage"):
+        if is_url:
+           st.write("Tokens used for finding product from url (0.8 temp):", uq_raw.response_metadata['token_usage']) 
+           input_cost = (uq_raw.response_metadata['token_usage']['prompt_tokens'] / 1_000_000) * 5.00
+           output_cost = (uq_raw.response_metadata['token_usage']['completion_tokens'] / 1_000_000) * 15.00
+           st.write("Cost (USD):",  round(input_cost+output_cost, 5))
+        
         st.write("Tokens used for finding brands (0.8 temp):", relevent_category.response_metadata['token_usage'])
-
+        input_cost = (relevent_category.response_metadata['token_usage']['prompt_tokens'] / 1_000_000) * 5.00
+        output_cost = (relevent_category.response_metadata['token_usage']['completion_tokens'] / 1_000_000) * 15.00
+        st.write("Cost (USD):",  round(input_cost+output_cost, 5))
 
 #-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -172,21 +179,7 @@ st.write("A PoC for utilizing AI Agents for Resal's Save More coupon store.")
 
 #Api key:
 openAI_api = st.text_input("[Enter your OpenAI key to get started](https://openai.com/api/)", type="password")
-search_type = st.selectbox(
-    "Free search engine or paid (100 free per day)?",
-    ("Free", "Paid")
-)
-st.write("Engine Selected:", search_type)
-
-
-if search_type == "Paid":
-    api_key = st.text_input("[Enter your Google Cloud Console key to get started](https://console.cloud.google.com/welcome/new)", type="password")
-    search_id = st.text_input("[Enter your Search Engine ID to get started](https://programmablesearchengine.google.com/about/)", type="password")
-
-else:
-    api_key = ""
-    search_id = ""
-
+st.divider()
 #Chatting:
 st.subheader("What are you looking for?")
 
@@ -201,9 +194,7 @@ if openAI_api:
     st.write("or a link like:")
     st.write("https://www.amazon.ca/lg-oled-65/s?k=lg+oled+65")
     st.divider()
+    st.subheader('Results:')
     if user_question != "":
-        if search_type == 'Free':
-            all_comp(llm_find_brands, category_names, user_question, 1, api_key, search_id)
-        else:
-            all_comp(llm_find_brands, category_names, user_question, 0, api_key, search_id)
+        all_comp(llm_find_brands, category_names, user_question)
 
